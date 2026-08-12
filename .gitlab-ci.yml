@@ -1,0 +1,30 @@
+stages:
+  - build
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE/buildroot-sdk
+
+build-image:
+  stage: build
+  tags:
+    - linux_amd64
+  rules:
+    - changes:
+        - Dockerfile
+  script:
+    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - podman build --target dev -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" .
+    - podman push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - podman push "$IMAGE_NAME:latest"
+
+build-app:
+  stage: build
+  tags:
+    - linux_amd64
+  rules:
+    - changes:
+        - CMakeLists.txt
+        - main/**/*
+        - build.py
+  script:
+    - python3 build.py
