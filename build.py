@@ -1,6 +1,12 @@
 import os
 import subprocess
+import shutil
+from pathlib import Path
 
+if Path("build").exists():
+    shutil.rmtree(Path("build"))
+
+Path("build").mkdir()
 
 subprocess.run([
     "podman",
