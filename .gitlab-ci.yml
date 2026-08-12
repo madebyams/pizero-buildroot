@@ -12,6 +12,7 @@ build-image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - changes:
         - Dockerfile
   script:
@@ -30,6 +31,7 @@ build-app:
     - linux_amd64
   image: $IMAGE_NAME:latest
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - changes:
         - CMakeLists.txt
         - main/**/*
