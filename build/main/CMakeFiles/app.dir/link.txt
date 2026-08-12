@@ -1,1 +1,0 @@
-/buildroot/output/host/bin/aarch64-linux-g++ -Wl,--dependency-file=CMakeFiles/app.dir/link.d CMakeFiles/app.dir/main.cc.o -o app

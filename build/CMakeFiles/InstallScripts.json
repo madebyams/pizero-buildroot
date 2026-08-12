@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/work/build/cmake_install.cmake",
-		"/work/build/main/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
