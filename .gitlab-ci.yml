@@ -8,23 +8,34 @@ build-image:
   stage: build
   tags:
     - linux_amd64
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   rules:
     - changes:
         - Dockerfile
   script:
-    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - podman build --target dev -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" .
-    - podman push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-    - podman push "$IMAGE_NAME:latest"
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+        --context "$CI_PROJECT_DIR"
+        --dockerfile "$CI_PROJECT_DIR/Dockerfile"
+        --target dev
+        --destination "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+        --destination "$IMAGE_NAME:latest"
 
 build-app:
   stage: build
   tags:
     - linux_amd64
+  image: $IMAGE_NAME:latest
   rules:
     - changes:
         - CMakeLists.txt
         - main/**/*
         - build.py
   script:
-    - python3 build.py
+    - mkdir -p build
+    - cd build
+    - /buildroot/output/host/bin/cmake -DCMAKE_C_COMPILER=/buildroot/output/host/bin/aarch64-linux-gcc -DCMAKE_CXX_COMPILER=/buildroot/output/host/bin/aarch64-linux-g++ ..
+    - /buildroot/output/host/bin/cmake --build .
