@@ -10,6 +10,7 @@ variables:
 
 .relevant-changes: &relevant-changes
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - changes:
         - Dockerfile
         - CMakeLists.txt
