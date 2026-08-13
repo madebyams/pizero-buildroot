@@ -48,6 +48,7 @@ compile-app:
   image: $SDK_IMAGE:latest
   <<: *relevant-changes
   script:
+    - rm -rf build
     - mkdir -p build
     - cd build
     - /buildroot/output/host/bin/cmake -DCMAKE_C_COMPILER=/buildroot/output/host/bin/aarch64-linux-gcc -DCMAKE_CXX_COMPILER=/buildroot/output/host/bin/aarch64-linux-g++ ..
