@@ -36,3 +36,37 @@ subprocess.run([
     "--build",
     "."
 ], check=True)
+
+shutil.move("./build/main/app", "./app-overlay/usr/bin/app")
+
+subprocess.run([
+    "podman",
+    "build",
+    "--target",
+    "image",
+    "-t",
+    "buildroot-image",
+    "."
+], check=True)
+
+subprocess.run([
+    "podman",
+    "create",
+    "--replace",
+    "--name",
+    "temp_extract",
+    "buildroot-image"
+], check=True)
+
+subprocess.run([
+    "podman",
+    "cp",
+    "temp_extract:/buildroot/output/images/sdcard.img",
+    "./sdcard.img"
+], check=True)
+
+subprocess.run([
+    "podman",
+    "rm",
+    "temp_extract"
+], check=True)
