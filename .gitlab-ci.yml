@@ -44,7 +44,7 @@ compile-app:
   stage: compile
   tags:
     - linux_amd64
-         image: $SDK_IMAGE:latest
+  image: $SDK_IMAGE:latest
   <<: *relevant-changes
   script:
     - mkdir -p build
