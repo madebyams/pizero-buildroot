@@ -19,6 +19,14 @@
 ARG BUILDROOT_VERSION=master
 ARG BR2_DEFCONFIG=raspberrypizero2w_64_defconfig
 
+# Image to pull the built toolchain from instead of building it locally.
+# Defaults to the `toolchain` stage below, so plain `docker build`/
+# `podman build` still works unmodified. CI overrides this with an
+# already-pushed image so the `dev`/`image` targets don't each have to
+# rebuild the toolchain from source (and so kaniko doesn't have to hold
+# two full copies of that stage on disk at once).
+ARG TOOLCHAIN_IMAGE=toolchain
+
 ########################################
 # base: host build dependencies
 ########################################
@@ -65,10 +73,11 @@ RUN --mount=type=cache,target=/buildroot/dl,sharing=locked \
 # dev: standalone toolchain image for application development
 ########################################
 FROM base AS dev
+ARG TOOLCHAIN_IMAGE
 # The internal toolchain isn't relocatable like the `make sdk` tarball is —
 # its gcc specs/sysroot paths are baked to this exact location, so it's kept
 # at the same absolute path rather than moved (e.g. to /opt/sdk).
-COPY --from=toolchain /buildroot/output/host /buildroot/output/host
+COPY --from=${TOOLCHAIN_IMAGE} /buildroot/output/host /buildroot/output/host
 ENV PATH="/buildroot/output/host/bin:${PATH}"
 WORKDIR /work
 # Find your compiler's exact name with: ls /buildroot/output/host/bin/*-gcc
@@ -76,7 +85,7 @@ WORKDIR /work
 ########################################
 # image: final rootfs/image build with your app baked in
 ########################################
-FROM toolchain AS image
+FROM ${TOOLCHAIN_IMAGE} AS image
 
 # Mirror the target rootfs layout under app-overlay/, e.g.
 # app-overlay/usr/bin/myapp -> installed as /usr/bin/myapp on the target.

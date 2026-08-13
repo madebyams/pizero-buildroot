@@ -6,6 +6,7 @@ stages:
 
 variables:
   SDK_IMAGE: $CI_REGISTRY_IMAGE/buildroot-sdk
+  TOOLCHAIN_IMAGE: $CI_REGISTRY_IMAGE/buildroot-toolchain
   FINAL_IMAGE: $CI_REGISTRY_IMAGE/buildroot-image
   GIT_STRATEGY: clone
   GIT_CLEAN_FLAGS: -ffdx
@@ -36,10 +37,22 @@ build-sdk-image:
         - Dockerfile
   script:
     - *kaniko-login
+    # Build+push the toolchain once here, so this job and build-final-image
+    # both pull it instead of rebuilding it from source (git clone +
+    # toolchain download + host tool compiles) in every kaniko invocation.
     - /kaniko/executor
+        --single-snapshot
+        --context "$CI_PROJECT_DIR"
+        --dockerfile "$CI_PROJECT_DIR/Dockerfile"
+        --target toolchain
+        --destination "$TOOLCHAIN_IMAGE:$CI_COMMIT_SHORT_SHA"
+        --destination "$TOOLCHAIN_IMAGE:latest"
+    - /kaniko/executor
+        --single-snapshot
         --context "$CI_PROJECT_DIR"
         --dockerfile "$CI_PROJECT_DIR/Dockerfile"
         --target dev
+        --build-arg "TOOLCHAIN_IMAGE=$TOOLCHAIN_IMAGE:$CI_COMMIT_SHORT_SHA"
         --destination "$SDK_IMAGE:$CI_COMMIT_SHORT_SHA"
         --destination "$SDK_IMAGE:latest"
 
@@ -75,10 +88,16 @@ build-final-image:
   <<: *relevant-changes
   script:
     - *kaniko-login
+    # Uses the last toolchain image pushed by build-sdk-image (":latest",
+    # since this job runs on app-only changes where that job is skipped) —
+    # avoids rebuilding the toolchain from source and holding a second full
+    # copy of it on disk just to satisfy this stage's local `FROM toolchain`.
     - /kaniko/executor
+        --single-snapshot
         --context "$CI_PROJECT_DIR"
         --dockerfile "$CI_PROJECT_DIR/Dockerfile"
         --target image
+        --build-arg "TOOLCHAIN_IMAGE=$TOOLCHAIN_IMAGE:latest"
         --destination "$FINAL_IMAGE:$CI_COMMIT_SHORT_SHA"
         --destination "$FINAL_IMAGE:latest"
 
