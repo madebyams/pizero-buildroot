@@ -1,0 +1,22 @@
+image: debian/stable
+packages:
+  - buildah
+  - fuse-overlayfs
+  - uidmap
+sources:
+  - https://git.sr.ht/~itsams_wav/pizero-buildroot
+tasks:
+  - build-system-image: |
+      cd pizero-buildroot
+      buildah --storage-driver=vfs bud --isolation=chroot --network=host \
+        --target image --file Dockerfile --tag pizero-buildroot:latest .
+      container="$(buildah --storage-driver=vfs from pizero-buildroot:latest)"
+      mount="$(buildah --storage-driver=vfs mount "$container")"
+      cp "$mount/buildroot/output/images/sdcard.img" ./sdcard.img
+      buildah --storage-driver=vfs umount "$container"
+      buildah --storage-driver=vfs rm "$container"
+      buildah --storage-driver=vfs push pizero-buildroot:latest \
+        oci-archive:pizero-buildroot.oci.tar
+artifacts:
+  - pizero-buildroot/sdcard.img
+  - pizero-buildroot/pizero-buildroot.oci.tar
