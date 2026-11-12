@@ -17,8 +17,5 @@ tasks:
       cp "$mount/buildroot/output/images/sdcard.img" ./sdcard.img
       buildah --storage-driver=vfs umount "$container"
       buildah --storage-driver=vfs rm "$container"
-      buildah --storage-driver=vfs push pizero-buildroot:latest \
-        oci-archive:pizero-buildroot.oci.tar
 artifacts:
   - pizero-buildroot/sdcard.img
-  - pizero-buildroot/pizero-buildroot.oci.tar
