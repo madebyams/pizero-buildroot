@@ -3,6 +3,8 @@ packages:
   - buildah
   - fuse-overlayfs
   - uidmap
+  - netavark
+  - aardvark-dns
 sources:
   - https://git.sr.ht/~itsams_wav/pizero-buildroot
 tasks:
