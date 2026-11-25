@@ -1,0 +1,60 @@
+name: CI
+
+# Converted from the former builds.sr.ht manifest (.build.yml).
+# Each sourcehut task is one step; $HOME is the workspace, as on sourcehut.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:stable
+      options: --privileged
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    defaults:
+      run:
+        shell: bash -xe {0}
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update
+          apt-get install -y git ca-certificates \
+            buildah \
+            fuse-overlayfs \
+            uidmap \
+            netavark \
+            aardvark-dns
+
+      - uses: actions/checkout@v4
+        with:
+          path: "pizero-buildroot"
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: "build-system-image"
+        run: |
+          export HOME="$GITHUB_WORKSPACE"
+          cd "$HOME"
+          cd pizero-buildroot
+          buildah --storage-driver=vfs bud --isolation=chroot --network=host \
+            --target image --file Dockerfile --tag pizero-buildroot:latest .
+          container="$(buildah --storage-driver=vfs from pizero-buildroot:latest)"
+          mount="$(buildah --storage-driver=vfs mount "$container")"
+          cp "$mount/buildroot/output/images/sdcard.img" ./sdcard.img
+          buildah --storage-driver=vfs umount "$container"
+          buildah --storage-driver=vfs rm "$container"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          if-no-files-found: warn
+          path: |
+            pizero-buildroot/sdcard.img
